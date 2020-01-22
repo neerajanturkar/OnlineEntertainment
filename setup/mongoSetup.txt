@@ -1,0 +1,3 @@
+use online_entertainment
+db.createCollection('user');
+db.createCollection('tile');

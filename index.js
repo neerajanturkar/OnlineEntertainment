@@ -14,9 +14,11 @@ app.use(cors());
 
 const driver = neo4j.driver("bolt://localhost:7687", neo4j.auth.basic("neo4j", "Anturkar@05"));
 const session = driver.session();
+
+
 mongoose.connect('mongodb://localhost:27017/reale');
 mongoose.connection.on('connected', () => {
-    console.log("Database connected");
+    console.log("Mongodb connected");
 });
 app.use(function(req, res, next) {
     res.header("Access-Control-Allow-Origin", "http://localhost"); 
@@ -27,11 +29,4 @@ app.use(function(req, res, next) {
 redisClient.on('connect', function() {
     console.log('Redis connected');
 });
-// mongoose.connection.console.error('error',(err) => {
-//     if(err){
-//         console.log("Error : " + err);
-//     }
-// });
-
-  
 app.listen(PORT, () => console.log(`Server started on ${PORT}`));
