@@ -3,6 +3,7 @@ const cors = require("cors");
 const mongoose = require("mongoose");
 const redis = require("redis")
 const neo4j = require('neo4j-driver');
+const apriori = require('apriori');
 
 const app = express();
 const PORT = 5000;
@@ -33,4 +34,27 @@ app.use(function(req, res, next) {
 redisClient.on('connect', function() {
     console.log('Redis connected');
 });
+
+// redisClient.scan('0','MATCH','an*','COUNT','100',(err, reply) => {
+//     console.log(reply[1].length);
+//     // for (var name : reply[1]){
+//     //     // console.log(name.name);
+//     // }
+//     for (var i = 0; i < reply[1].length; i++) {
+//         console.log(reply[1][i]);
+//         //Do something
+//         redisClient.get(reply[1][i],(err2,reply2) => {
+//             console.log(reply2);
+//         });
+//     }
+// })
+let transactions = [
+    [1,3,4],
+    [2,3,5],
+    [1,2,3,5],
+    [2,5],
+    [1,2,3,5]
+];
+var result = new apriori.Algorithm(0.15, 0.6, false).showAnalysisResultFromFile('dataset.csv');
+console.log(" hi"  +result);
 app.listen(PORT, () => console.log(`Server started on ${PORT}`));
