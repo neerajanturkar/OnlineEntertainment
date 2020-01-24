@@ -7,7 +7,7 @@ const redisClient = redis.createClient();
 
 router.post('/create', (req, res, next) => {
     var tile = new Tile(req.body);
-    const driver = neo4j.driver("bolt://localhost:7687", neo4j.auth.basic("neo4j", "Anturkar@05"));
+    const driver = neo4j.driver("bolt://localhost:7687", neo4j.auth.basic("neo4j", "neo5j"));
     const session = driver.session();
     tile.save(function(err, user){
         if (err) {
