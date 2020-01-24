@@ -15,7 +15,7 @@ const tile = require("./api/tile")
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cors());
-app.use('/api/tile', tile); 
+app.use('/api/tile/', tile); 
 app.use('/api/user', user);
 const driver = neo4j.driver("bolt://localhost:7687", neo4j.auth.basic("neo4j", "Anturkar@05"));
 const session = driver.session();
