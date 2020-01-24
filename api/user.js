@@ -5,11 +5,11 @@ const neo4j = require('neo4j-driver');
 const redis = require("redis");
 const redisClient = redis.createClient();
 
-router.post('/', adduser);
+router.post('/', addUser);
 router.get('/', getUserFromRedis, getUserFromMongo);
 
 
-function adduser(req, res, next) {
+function addUser(req, res, next) {
     var user = new User(req.body);
     const driver = neo4j.driver("bolt://localhost:7687", neo4j.auth.basic("neo4j", "Anturkar@05"));
     const session = driver.session();
