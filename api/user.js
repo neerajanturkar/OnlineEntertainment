@@ -62,9 +62,11 @@ function addRelation(req, res, next) {
     var tile = req.body.tile;
     var like = req.body.like; 
     
-    User.findOne({email: email}).exec((err, foundUser) => {        
+    User.findOne({email: email}).exec((err, foundUser) => {  
+        if(err) res.json({"success": false, "message" : err});      
         if(foundUser) {
             Tile.findOne({tile: tile}).exec((err, foundTile) =>  {
+                if(err) res.json({"success": false, "message" : err});      
                 if(foundTile) {
                     userId = foundUser['_id'];
                     tileId = foundTile['_id'];
@@ -80,7 +82,7 @@ function addRelation(req, res, next) {
                 }
             });
         } else {
-            res.json({"success": false, "message" : "No user with emaik " + email + " found"});
+            res.json({"success": false, "message" : "No user with email " + email + " found"});
         }
     });
     
