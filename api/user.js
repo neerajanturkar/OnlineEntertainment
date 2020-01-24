@@ -5,14 +5,18 @@ const neo4j = require('neo4j-driver');
 const redis = require("redis");
 const redisClient = redis.createClient();
 
-router.post('/', (req, res, next) => {
+router.post('/', adduser);
+router.get('/', getUserFromRedis, getUserFromMongo);
+
+
+function adduser(req, res, next) {
     var user = new User(req.body);
     const driver = neo4j.driver("bolt://localhost:7687", neo4j.auth.basic("neo4j", "Anturkar@05"));
     const session = driver.session();
     user.save(function(err, user){
         if (err) {
             res.json(err); 
-            return console.error(err);
+            return;
         }
         var id = user['_id'];
         
@@ -24,16 +28,10 @@ router.post('/', (req, res, next) => {
             redisClient.set(user['email'], JSON.stringify(user), function(err, reply) {
                 res.json({"message":"User added successfuly", user});
               });
-             
-            
-
         });
     });
-});
-
-router.get('/', getUserFromRedis,getUserFromMongo);
-
-function getUserFromRedis(req, res, next ){
+}
+function getUserFromRedis(req, res, next ) {
     redisClient.get(req.query['email'], (err, reply) => {
         if(err) next();
         
@@ -46,7 +44,6 @@ function getUserFromRedis(req, res, next ){
     });
 }
 function getUserFromMongo(req, res, next) {
-    var userSearched;
     User.findOne({email: req.query['email']}).exec((err, user) => {
         if(user){
             res.json({"success": true , "user":user,"message": "Fetched from mongodb"});
@@ -54,8 +51,6 @@ function getUserFromMongo(req, res, next) {
             res.json({"success": false ,"message": "User not found"});
         }
     });
-    
-    
 }
     
 module.exports = router; 
