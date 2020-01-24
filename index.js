@@ -3,7 +3,6 @@ const cors = require("cors");
 const mongoose = require("mongoose");
 const redis = require("redis")
 const neo4j = require('neo4j-driver');
-const apriori = require('apriori');
 
 const app = express();
 const PORT = 5000;
@@ -15,7 +14,7 @@ const tile = require("./api/tile")
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cors());
-app.use('/api/tile/', tile); 
+app.use('/api/tile', tile); 
 app.use('/api/user', user);
 const driver = neo4j.driver("bolt://localhost:7687", neo4j.auth.basic("neo4j", "Anturkar@05"));
 const session = driver.session();
@@ -48,13 +47,4 @@ redisClient.on('connect', function() {
 //         });
 //     }
 // })
-let transactions = [
-    [1,3,4],
-    [2,3,5],
-    [1,2,3,5],
-    [2,5],
-    [1,2,3,5]
-];
-var result = new apriori.Algorithm(0.15, 0.6, false).showAnalysisResultFromFile('dataset.csv');
-console.log(" hi"  +result);
 app.listen(PORT, () => console.log(`Server started on ${PORT}`));

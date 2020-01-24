@@ -21,7 +21,7 @@ router.post('/', (req, res, next) => {
             session.close();
             driver.close();
             
-            redisClient.set(user['name'], JSON.stringify(user), function(err, reply) {
+            redisClient.set(user['email'], JSON.stringify(user), function(err, reply) {
                 res.json({"message":"User added successfuly", user});
               });
              
@@ -31,4 +31,31 @@ router.post('/', (req, res, next) => {
     });
 });
 
+router.get('/', getUserFromRedis,getUserFromMongo);
+
+function getUserFromRedis(req, res, next ){
+    redisClient.get(req.query['email'], (err, reply) => {
+        if(err) next();
+        
+        if(reply){ 
+            res.status(200).json({"success": true, "user":JSON.parse(reply), "message": "Fetcehd from redis"});
+            return;
+        } else {
+            next();
+        }
+    });
+}
+function getUserFromMongo(req, res, next) {
+    var userSearched;
+    User.findOne({email: req.query['email']}).exec((err, user) => {
+        if(user){
+            res.json({"success": true , "user":user,"message": "Fetched from mongodb"});
+        } else{
+            res.json({"success": false ,"message": "User not found"});
+        }
+    });
+    
+    
+}
+    
 module.exports = router; 
