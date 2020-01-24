@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const User = require("../model/user.model");
+const Tile = require("../model/tile.model");
 const neo4j = require('neo4j-driver');
 const redis = require("redis");
 const redisClient = redis.createClient();

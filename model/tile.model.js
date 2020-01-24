@@ -7,7 +7,7 @@ const tileSchema = mongoose.Schema({
     publishedOn: { type: Date},
     duration: {type: String},
     genere:	{type: [String]},
-    prevTile: {type: UUID}
+    // prevTile: {type: UUID}
 });
 
 const Tile = module.exports = mongoose.model('tile', tileSchema);
