@@ -1,12 +1,14 @@
 const express = require("express");
 const router = express.Router();
 const User = require("../model/user.model");
+const Tile = require("../model/tile.model");
 const neo4j = require('neo4j-driver');
 const redis = require("redis");
 const redisClient = redis.createClient();
 
 router.post('/', addUser);
 router.get('/', getUserFromRedis, getUserFromMongo);
+router.post('/addRelation', addRelation);
 
 
 function addUser(req, res, next) {
@@ -51,6 +53,38 @@ function getUserFromMongo(req, res, next) {
             res.json({"success": false ,"message": "User not found"});
         }
     });
+}
+
+function addRelation(req, res, next) {
+    const driver = neo4j.driver("bolt://localhost:7687", neo4j.auth.basic("neo4j", "Anturkar@05"));
+    const session = driver.session();
+    var email = req.body.email;
+    var tile = req.body.tile;
+    var like = req.body.like; 
+    
+    User.findOne({email: email}).exec((err, foundUser) => {        
+        if(foundUser) {
+            Tile.findOne({tile: tile}).exec((err, foundTile) =>  {
+                if(foundTile) {
+                    userId = foundUser['_id'];
+                    tileId = foundTile['_id'];
+                    
+                    const resultPromise = session.run('MATCH (u:USER),(t:TILE) WHERE u.id = $userId AND t.id = $tileId CREATE (u)-[r:WATCHED {like:$like} ]->(t) RETURN r',{userId: String(userId), tileId: String(tileId), like: String(like)});
+                    resultPromise.then(result => {
+                        session.close();
+                        driver.close();
+                        res.json({"success": true, "message" : "Added relationship successfully"})
+                    });
+                } else {
+                    res.json({"success": false, "message" : "No tile with name " + tile + " found"})
+                }
+            });
+        } else {
+            res.json({"success": false, "message" : "No user with emaik " + email + " found"});
+        }
+    });
+    
+    
 }
     
 module.exports = router; 

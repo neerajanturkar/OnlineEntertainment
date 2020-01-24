@@ -18,7 +18,7 @@ function addTile(req, res, next) {
         }
         var id = tile['_id'];
         
-        const resultPromise = session.run('CREATE (t:TILE {id:$id}) RETURN t',{id: String(id)});
+        const resultPromise = session.run('CREATE (t:TILE {id:$id , tile:$tile}) RETURN t',{id: String(id), tile: tile['tile']});
         resultPromise.then(result => {
             session.close();
             driver.close();
