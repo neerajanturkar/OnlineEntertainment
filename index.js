@@ -34,17 +34,4 @@ redisClient.on('connect', function() {
     console.log('Redis connected');
 });
 
-// redisClient.scan('0','MATCH','an*','COUNT','100',(err, reply) => {
-//     console.log(reply[1].length);
-//     // for (var name : reply[1]){
-//     //     // console.log(name.name);
-//     // }
-//     for (var i = 0; i < reply[1].length; i++) {
-//         console.log(reply[1][i]);
-//         //Do something
-//         redisClient.get(reply[1][i],(err2,reply2) => {
-//             console.log(reply2);
-//         });
-//     }
-// })
 app.listen(PORT, () => console.log(`Server started on ${PORT}`));

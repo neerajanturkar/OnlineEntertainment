@@ -6,6 +6,7 @@ const redis = require("redis");
 const redisClient = redis.createClient();
 
 router.post('/', addTile);
+router.get('/', getTilesFromRedis, getTilesFromMongo);
 
 function addTile(req, res, next) {
     var tile = new Tile(req.body);
@@ -23,10 +24,47 @@ function addTile(req, res, next) {
             session.close();
             driver.close();
             
-            redisClient.set(tile['tile'], JSON.stringify(user), function(err, reply) {
+            redisClient.set(tile['tile'].toLowerCase(), JSON.stringify(tile), function(err, reply) {
                 res.json({"message":"Tile created successfuly", tile});
               });
         });
+    });
+}
+
+function getTilesFromRedis(req, res, next){
+    if (req.query['search'] == undefined ) res.json({"success": false, "message": "search string cannot be null"});
+    if (req.query['cached'] === 'false') {
+        next();
+    } else {    
+        search = req.query['search'] + "*";    
+        redisClient.scan('0', 'MATCH', search.toLowerCase(), 'COUNT', '100',(err, reply) => {
+                if(reply[1].length > 0 ) {
+                    var tiles = [];
+                    for (var i = 0; i < reply[1].length; i++) {
+                        tiles.push(reply[1][i]);   
+                    }    
+                    redisClient.mget(tiles,(err2,reply2) => {
+                        result = '[' + reply2 + ']';
+                        tiles = JSON.parse(result);
+                        res.json({"success": true, "tiles": tiles , "message": "Tiles fetched from redis"});
+                        
+                    });
+                    
+                } else {
+                    next();
+                }
+                
+            })
+    }
+}
+function getTilesFromMongo(req, res, next){
+  
+    Tile.find({'tile': new RegExp(req.query['search'], 'i') }, (err, tiles) => {
+        if(err) res.json({"success": false, "message": err});
+        if(tiles.length > 0)
+            res.json({"success": true, "tiles": tiles , "message": "Tiles fetched mongodb"});
+        else
+            res.json({"success": false, "message": "No tiles found"});
     });
 }
 module.exports = router; 
