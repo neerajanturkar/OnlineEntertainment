@@ -9,7 +9,7 @@ router.post('/create', (req, res, next) => {
     var tile = new Tile(req.body);
     const driver = neo4j.driver("bolt://localhost:7687", neo4j.auth.basic("neo4j", "neo5j"));
     const session = driver.session();
-    tile.save(function(err, user){
+    tile.save(function(err, tile){
         if (err) {
             res.json(err); 
             return console.error(err);
@@ -28,4 +28,18 @@ router.post('/create', (req, res, next) => {
     });
 });
 
+router.post('/update', (req, res, next) => {
+    var tile = new Tile(req.body);
+    const driver = neo4j.driver("bolt://localhost:7687", neo4j.auth.basic("neo4j", "neo5j"));
+    const session = driver.session();
+    tile.findByIdAndUpdate(tileId, {$set:{
+        tileId: tileId,
+        tile: tile, 
+        description: description,
+        publishedOn : publishedOn,
+        duration : duration,
+        projectduedate : projectduedate,
+        genere : genere,
+        }})
+});
 module.exports = router; 
