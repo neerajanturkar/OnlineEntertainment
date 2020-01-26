@@ -18,16 +18,48 @@ function addTile(req, res, next) {
             return console.error(err);
         }
         var id = tile['_id'];
+
         
-        const resultPromise = session.run('CREATE (t:TILE {id:$id , tile:$tile}) RETURN t',{id: String(id), tile: tile['tile']});
-        resultPromise.then(result => {
+        let query = " ";
+        req.body.genere.forEach(element => {
+            query += "MERGE (:GENERE {name:'"+ element + "' }) "
+            
+        })
+        
+        const generePromise = session.run(query);
+        generePromise.then(result => {
             session.close();
-            driver.close();
+        });
+        var generes = '[';
+        req.body.genere.forEach((element, index, array) => {
+            if(index === req.body.genere.length -1)
+                generes += "'" + element + "']";
+            else
+                generes += "'" + element + "',";
+        });
+        
+       
+        newSession = driver.session();
+        const resultPromise = newSession.run('CREATE (t:TILE {id:$id , tile:$tile}) RETURN t',{id: String(id), tile: tile['tile']});
+        resultPromise.then(result => {
+            newSession.close();
+            
+            var relationQuery = "MATCH (t:TILE), (g:GENERE) WHERE t.id = '" + String(id) + "' AND g.name IN " + generes + " CREATE (t)-[r:BELONGS_TO ]->(g) RETURN r";
+            
+            newSession = driver.session();
+            const genereRelationPromise = newSession.run(relationQuery);
+            genereRelationPromise.then(result => {
+                newSession.close();
+                driver.close();
+                
+            })
             
             redisClient.set(tile['tile'].toLowerCase(), JSON.stringify(tile), function(err, reply) {
                 res.json({"message":"Tile created successfuly", tile});
               });
         });
+        
+
     });
 }
 
