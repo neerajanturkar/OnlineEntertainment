@@ -14,7 +14,7 @@ const tile = require("./api/tile")
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cors());
-app.use('/api/tile/', tile); 
+app.use('/api/tile', tile); 
 app.use('/api/user', user);
 const driver = neo4j.driver("bolt://localhost:7687", neo4j.auth.basic("neo4j", "Anturkar@05"));
 const session = driver.session();
@@ -33,4 +33,5 @@ app.use(function(req, res, next) {
 redisClient.on('connect', function() {
     console.log('Redis connected');
 });
+
 app.listen(PORT, () => console.log(`Server started on ${PORT}`));
