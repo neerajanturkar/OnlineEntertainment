@@ -9,6 +9,7 @@ const redisClient = redis.createClient();
 router.post('/', addUser);
 router.get('/', getUserFromRedis, getUserFromMongo);
 router.post('/addRelation', addRelation);
+router.put('/',updateUser);
 
 
 function addUser(req, res, next) {
@@ -88,5 +89,43 @@ function addRelation(req, res, next) {
     
     
 }
-    
-module.exports = router; 
+function updateUser(req, res, next) {
+    userId = req.body.userId,
+    name = req.body.name,
+    email = req.body.email,
+    dob = req.body.dob,
+    preferedGeners = req.body.preferedGeners
+
+    var getUserValue = function getUser(){
+        redisClient.get(user['name'], JSON.stringify(user), function(err, reply){
+            res.json({user});
+        });
+    }
+
+    console.log(getUserValue);
+    if (getUserValue == getUserValue){
+        redisClient.flushdb(User['name'], JSON.stringify(user), function(err, reply){
+            res.json({"message":"User deleted successfuly from redis"});
+        });
+    }
+
+    const driver = neo4j.driver("bolt://localhost:7687", neo4j.auth.basic("neo4j", "Neo4j"));
+    const session = driver.session();
+    User.findByIdAndUpdate(UserId, {$set:{
+    UserId: UserId,
+    name: name,
+    email: email,
+    dob: dob,
+    preferedGeners: preferedGeners,
+    }}, function(err, user){
+        if (err) {
+            res.json(err);
+            return console.error(err);
+        }
+                redisClient.set(user['name'].toLowerCase(), JSON.stringify(user), function(err, reply){
+                    res.json({"message":"User updated Successfuly", user});
+                });
+    });
+}   
+module.exports = router;
+

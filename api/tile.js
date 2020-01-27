@@ -108,28 +108,16 @@ function updateTile(req, res, next) {
     duration = req.body.duration,
     genere = req.body.genere
 
-<<<<<<< HEAD
     redisClient.hdel(tile['tile'], JSON.stringify(tile), function(err, reply) {
-        //res.json({"message":"Tile deleted successfuly from redis"});
-        
-=======
-        var getTileValue = function getTile(){
-            redisClient.get(tile['tile'], JSON.stringify(tile), function(err, reply) {
-                res.json({tile});
-            });
-        }
-        // console.log(getTile().value);
     
-        console.log(getTileValue);
-        if (getTileValue == getTileValue){
-            redisClient.flushdb(tile['tile'], JSON.stringify(tile), function(err, reply) {
-                res.json({"message":"Tile deleted successfuly from redis"});
-            });
-        }
+        redisClient.flushdb(tile['tile'], JSON.stringify(tile), function(err, reply) {
+            
+            console.log("Tile deleted successfuly from redis")
+        });
+        
 
         const driver = neo4j.driver("bolt://localhost:7687", neo4j.auth.basic("neo4j", "Anturkar@05"));
         const session = driver.session();
->>>>>>> 3c984519f32d8064d20552f9a21bfe50857a6d1c
         Tile.findByIdAndUpdate(tileId, {$set:{
         tileId: tileId,
         tile: tile, 
@@ -143,7 +131,7 @@ function updateTile(req, res, next) {
                 res.json(err); 
                 return console.error(err);
             }
-       // var id = tile['_id'];              
+               
             redisClient.set(Tile['tile'].toLowerCase(), JSON.stringify(Tile), function(err, reply) {
                 res.json({"message":"Tile updated successfuly", Tile});
             });
