@@ -11,7 +11,7 @@ router.put('/', updateTile)
 
 function addTile(req, res, next) {
     var tile = new Tile(req.body);
-    const driver = neo4j.driver("bolt://localhost:7687", neo4j.auth.basic("neo4j", "neo5j"));
+    const driver = neo4j.driver("bolt://localhost:7687", neo4j.auth.basic("neo4j", "Anturkar@05"));
     const session = driver.session();
     tile.save(function(err, tile){
         if (err) {
@@ -19,16 +19,48 @@ function addTile(req, res, next) {
             return console.error(err);
         }
         var id = tile['_id'];
+
         
-        const resultPromise = session.run('CREATE (t:TILE {id:$id , tile:$tile}) RETURN t',{id: String(id), tile: tile['tile']});
-        resultPromise.then(result => {
+        let query = " ";
+        req.body.genere.forEach(element => {
+            query += "MERGE (:GENERE {name:'"+ element + "' }) "
+            
+        })
+        
+        const generePromise = session.run(query);
+        generePromise.then(result => {
             session.close();
-            driver.close();
+        });
+        var generes = '[';
+        req.body.genere.forEach((element, index, array) => {
+            if(index === req.body.genere.length -1)
+                generes += "'" + element + "']";
+            else
+                generes += "'" + element + "',";
+        });
+        
+       
+        newSession = driver.session();
+        const resultPromise = newSession.run('CREATE (t:TILE {id:$id , tile:$tile}) RETURN t',{id: String(id), tile: tile['tile']});
+        resultPromise.then(result => {
+            newSession.close();
+            
+            var relationQuery = "MATCH (t:TILE), (g:GENERE) WHERE t.id = '" + String(id) + "' AND g.name IN " + generes + " CREATE (t)-[r:BELONGS_TO ]->(g) RETURN r";
+            
+            newSession = driver.session();
+            const genereRelationPromise = newSession.run(relationQuery);
+            genereRelationPromise.then(result => {
+                newSession.close();
+                driver.close();
+                
+            })
             
             redisClient.set(tile['tile'].toLowerCase(), JSON.stringify(tile), function(err, reply) {
                 res.json({"message":"Tile created successfuly", tile});
               });
         });
+        
+
     });
 }
 
@@ -78,9 +110,28 @@ function updateTile(req, res, next) {
     duration = req.body.duration,
     genere = req.body.genere
 
+<<<<<<< HEAD
     redisClient.hdel(tile['tile'], JSON.stringify(tile), function(err, reply) {
         //res.json({"message":"Tile deleted successfuly from redis"});
         
+=======
+        var getTileValue = function getTile(){
+            redisClient.get(tile['tile'], JSON.stringify(tile), function(err, reply) {
+                res.json({tile});
+            });
+        }
+        // console.log(getTile().value);
+    
+        console.log(getTileValue);
+        if (getTileValue == getTileValue){
+            redisClient.flushdb(tile['tile'], JSON.stringify(tile), function(err, reply) {
+                res.json({"message":"Tile deleted successfuly from redis"});
+            });
+        }
+
+        const driver = neo4j.driver("bolt://localhost:7687", neo4j.auth.basic("neo4j", "Anturkar@05"));
+        const session = driver.session();
+>>>>>>> 3c984519f32d8064d20552f9a21bfe50857a6d1c
         Tile.findByIdAndUpdate(tileId, {$set:{
         tileId: tileId,
         tile: tile, 

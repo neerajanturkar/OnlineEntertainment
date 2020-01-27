@@ -1,3 +1,5 @@
 use online_entertainment
 db.createCollection('user');
 db.createCollection('tile');
+
+MATCH (t:TILE), (g:GENERE) WHERE t.id = '5e2dab41ff4be8e3f35caeeb' AND g.name IN ['non-fiction','talk show','feel good'] CREATE (t)-[r:BELONGS_TO ]->(g) RETURN r

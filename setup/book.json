@@ -1,0 +1,60 @@
+[{ 
+	"tile" : "Ellen Show",
+	"description" : "",
+	"type" : "series",
+	"publishedOn" : "2001-01-01",
+	"duration" : "600",
+	"genere": ["non-fiction","talk show","humor"]
+},
+{ 
+	"tile" : "My next guest with David Letterman",
+	"description" : "",
+	"type" : "series",
+	"publishedOn" : "2001-01-01",
+	"duration" : "600",
+	"genere": ["non-fiction","talk show","feel good"]
+},
+{ 
+	"tile" : "Money Heist",
+	"description" : "La Casa De Papel",
+	"type" : "series",
+	"publishedOn" : "2001-01-01",
+	"duration" : "600",
+	"genere": ["crime","thriller","fiction"]
+},
+
+{ 
+    "tile" : "Dont Be that Guy",
+    "description" : "Stand up comedy",
+    "type" : "movie",
+    "publishedOn" : "2001-01-01",
+    "duration" : "600",
+    "genere": ["comedy","stand-up","feel good"]
+},
+{ 
+    "tile" : "How I Met Your Mother",
+    "description" : "Famous Sitcom",
+    "type" : "series",
+    "publishedOn" : "2001-01-01",
+    "duration" : "600",
+    "genere": ["comedy","sitcom","romance"]
+},
+{ 
+    "tile" : "How I Met Your Mother",
+    "description" : "Famous Sitcom",
+    "type" : "series",
+    "publishedOn" : "2001-01-01",
+    "duration" : "600",
+    "genere": ["comedy","sitcom","drama"]
+},
+{ 
+    "tile" : "Air crash Investigation",
+    "description" : "Documentry on Air accedents",
+    "type" : "series",
+    "publishedOn" : "2003-01-01",
+    "duration" : "350",
+    "genere": ["documentry","non-fiction","mystery"]
+}
+
+
+]
