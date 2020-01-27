@@ -54,7 +54,40 @@
     "publishedOn" : "2003-01-01",
     "duration" : "350",
     "genere": ["documentry","non-fiction","mystery"]
-}
+},
+{ 
+	"tile" : "Food Factory",
+	"description" : "Documentry on Air accedents",
+	"type" : "series",
+	"publishedOn" : "2003-01-01",
+	"duration" : "350",
+	"genere": ["documentry","non-fiction","feel good"]
+},
+{ 
+	"tile" : "Game of Thrones",
+	"description" : "Most hyped show of the decade",
+	"type" : "series",
+	"publishedOn" : "2010-01-01",
+	"duration" : "560",
+	"genere": ["thriller","mystery","fiction"]
+},
+{ 
+	"tile" : "Almost Famous - Russel Peters",
+	"description" : "Political Stand-up Comedy",
+	"type" : "series",
+	"publishedOn" : "2010-01-01",
+	"duration" : "50",
+	"genere": ["comedy","stand-up","humor"]
+},
+{ 
+	"tile" : "Sherlock Holmes",
+	"description" : "Detective",
+	"type" : "series",
+	"publishedOn" : "2012-01-01",
+	"duration" : "300",
+	"genere": ["thriller","mystery","crime"]
+},
+
 
 
 ]

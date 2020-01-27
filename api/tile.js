@@ -17,15 +17,13 @@ function addTile(req, res, next) {
             res.json(err); 
             return console.error(err);
         }
-        var id = tile['_id'];
-
-        
+        var id = tile['_id'];      
         let query = " ";
         req.body.genere.forEach(element => {
             query += "MERGE (:GENERE {name:'"+ element + "' }) "
             
         })
-        
+        console.log(query);
         const generePromise = session.run(query);
         generePromise.then(result => {
             session.close();
@@ -45,7 +43,7 @@ function addTile(req, res, next) {
             newSession.close();
             
             var relationQuery = "MATCH (t:TILE), (g:GENERE) WHERE t.id = '" + String(id) + "' AND g.name IN " + generes + " CREATE (t)-[r:BELONGS_TO ]->(g) RETURN r";
-            
+            console.log(relationQuery);
             newSession = driver.session();
             const genereRelationPromise = newSession.run(relationQuery);
             genereRelationPromise.then(result => {
