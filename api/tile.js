@@ -20,15 +20,15 @@ function addTile(req, res, next) {
         }
         var id = tile['_id'];      
         let query = " ";
-        req.body.genere.forEach(element => {
-            query += "MERGE (:GENERE {name:'"+ element + "' }) "
+        // req.body.genere.forEach(element => {
+        //     query += "MERGE (:GENERE {name:'"+ element + "' }) "
             
-        })
-        console.log(query);
-        const generePromise = session.run(query);
-        generePromise.then(result => {
-            session.close();
-        });
+        // })
+        // console.log(query);
+        // const generePromise = session.run(query);
+        // generePromise.then(result => {
+        //     session.close();
+        // });
         var generes = '[';
         req.body.genere.forEach((element, index, array) => {
             if(index === req.body.genere.length -1)
@@ -42,16 +42,26 @@ function addTile(req, res, next) {
         const resultPromise = newSession.run('CREATE (t:TILE {id:$id , tile:$tile}) RETURN t',{id: String(id), tile: tile['tile']});
         resultPromise.then(result => {
             newSession.close();
-            
-            var relationQuery = "MATCH (t:TILE), (g:GENERE) WHERE t.id = '" + String(id) + "' AND g.name IN " + generes + " CREATE (t)-[r:BELONGS_TO ]->(g) RETURN r";
-            console.log(relationQuery);
-            newSession = driver.session();
-            const genereRelationPromise = newSession.run(relationQuery);
-            genereRelationPromise.then(result => {
-                newSession.close();
-                driver.close();
-                
+            req.body.genere.forEach(element => {
+                query += "MERGE (:GENERE {name:'"+ element + "' }) "             
             })
+            console.log(query);
+            const generePromise = session.run(query);
+            generePromise.then(result => {
+                session.close();
+                var relationQuery = "MATCH (t:TILE), (g:GENERE) WHERE t.id = '" + String(id) + "' AND g.name IN " + generes + " CREATE (t)-[r:BELONGS_TO ]->(g) RETURN r";
+                console.log(relationQuery);
+                newSession = driver.session();
+                const genereRelationPromise = newSession.run(relationQuery);
+                genereRelationPromise.then(result => {
+                    console.log(result);
+                    newSession.close();
+                    driver.close();
+                    
+                })
+            });
+            
+            
             
             redisClient.set(tile['tile'].toLowerCase(), JSON.stringify(tile), function(err, reply) {
                 res.json({"message":"Tile created successfuly", tile});

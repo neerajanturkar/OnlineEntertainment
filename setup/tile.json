@@ -159,12 +159,12 @@
     "genere": ["crime","drama","mystery"]
 },
 { 
-    "tile" : "Mr Robot",
-    "description" : "Elliot, a brilliant but highly unstable young cyber-security engineer and vigilante hacker, becomes a key figure in a complex game of global dominance when he and his shadowy allies try to take down the corrupt corporation he works for.",
-    "type" : "series",
-    "publishedOn" : "2015-06-24",
-    "duration" : "49 min",
-    "genere": ["crime","drama","thriller"]
+        "tile" : "Mr Robot",
+        "description" : "Elliot, a brilliant but highly unstable young cyber-security engineer and vigilante hacker, becomes a key figure in a complex game of global dominance when he and his shadowy allies try to take down the corrupt corporation he works for.",
+        "type" : "series",
+        "publishedOn" : "2015-06-24",
+        "duration" : "49 min",
+        "genere": ["crime","drama","thriller"]
 },
 { 
     "tile" : "Stranger Things",

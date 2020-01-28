@@ -4,3 +4,17 @@ db.createCollection('tile');
 
 MATCH (t:TILE), (g:GENERE) WHERE t.id = '5e2dab41ff4be8e3f35caeeb' AND g.name IN ['non-fiction','talk show','feel good'] CREATE (t)-[r:BELONGS_TO ]->(g) RETURN r
 MATCH (t:TILE)<-[:WATCHED{like:'false'}]-(u:USER) WITH t, count(u) as total return t.tile , total ORDER BY total desct p
+
+MATCH (t:TILE)<-[:WATCHED{like:'true'}]-(u:USER)
+WITH count(t) as total, t,g
+ORDER BY total DESC
+WHERE g.name in ['horror','comedy'] 
+RETURN t.tile as tile, total
+LIMIT 2
+
+match (t:TILE)-[:BELONGS_TO]->(g:GENERE)
+where g.name in ["action","thriller","crime","sci-fic"]
+with t , (count(t) * 100) /  4  as percentage_match
+return t.tile as tile, percentage_match
+order by percentage_match desc
+limit 5

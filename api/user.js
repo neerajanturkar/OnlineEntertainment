@@ -6,10 +6,14 @@ const neo4j = require('neo4j-driver');
 const redis = require("redis");
 const redisClient = redis.createClient();
 
-router.post('/', addUser);
+
+
 router.get('/', getUserFromRedis, getUserFromMongo);
+router.get('/recommendations', getRecommendations);
+router.post('/', addUser);
 router.post('/addRelation', addRelation);
 router.put('/',updateUser);
+
 
 
 function addUser(req, res, next) {
@@ -96,18 +100,11 @@ function updateUser(req, res, next) {
     dob = req.body.dob,
     preferedGeners = req.body.preferedGeners
 
-    var getUserValue = function getUser(){
-        redisClient.get(user['name'], JSON.stringify(user), function(err, reply){
-            res.json({user});
-        });
-    }
-
-    console.log(getUserValue);
-    if (getUserValue == getUserValue){
-        redisClient.flushdb(User['name'], JSON.stringify(user), function(err, reply){
-            res.json({"message":"User deleted successfuly from redis"});
-        });
-    }
+    
+    redisClient.flushdb(User['name'], JSON.stringify(user), function(err, reply){
+        res.json({"message":"User deleted successfuly from redis"});
+    });
+    
 
     const driver = neo4j.driver("bolt://localhost:7687", neo4j.auth.basic("neo4j", "Neo4j"));
     const session = driver.session();
@@ -127,5 +124,46 @@ function updateUser(req, res, next) {
                 });
     });
 }   
+function getRecommendations(req, res, next) {
+    const driver = neo4j.driver("bolt://localhost:7687", neo4j.auth.basic("neo4j", "Anturkar@05"));
+    const session = driver.session();
+    User.findOne({email: req.query['email']}).exec((err, user) => {
+        if(user){
+            console.log(user.preferedGeners);
+            var generes = '[';
+            user.preferedGeners.forEach((element, index, array) => {
+                if(index === user.preferedGeners.length -1)
+                    generes += "'" + element + "']";
+                else
+                    generes += "'" + element + "',";
+            });
+            query = "MATCH (t:TILE)-[:BELONGS_TO]->(g:GENERE) " +  
+                    "WHERE g.name in " + generes +
+                    " WITH t , (count(t) * 100) /  3  as percentage_match " +
+                    "RETURN t.tile as tile, percentage_match " +
+                    "ORDER BY percentage_match DESC " +
+                    "LIMIT 5"
+            console.log(query);
+            const resultPromise = session.run(query);
+            resultPromise.then(result => {
+                session.close();
+                driver.close();
+                var recommendations = [];
+                result.records.forEach(element => {
+                    // console.log(element['_fields']);
+                   var r = {};
+                   r['tile'] = element._fields[0];
+                   r['match_percentage'] = element._fields[1]['low'];
+                   recommendations.push(r);
+                });
+                
+                res.json({"success": true, "recommendations": recommendations,"message" : "recommendations fetched"})
+            });
+           
+        } else{
+            res.json({"success": false ,"message": "User not found"});
+        }
+    });
+}
 module.exports = router;
 
