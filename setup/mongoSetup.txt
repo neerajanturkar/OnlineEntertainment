@@ -8,13 +8,16 @@ MATCH (t:TILE)<-[:WATCHED{like:'false'}]-(u:USER) WITH t, count(u) as total retu
 MATCH (t:TILE)<-[:WATCHED{like:'true'}]-(u:USER)
 WITH count(t) as total, t,g
 ORDER BY total DESC
-WHERE g.name in ['horror','comedy'] 
 RETURN t.tile as tile, total
-LIMIT 2
 
-match (t:TILE)-[:BELONGS_TO]->(g:GENERE)
-where g.name in ["action","thriller","crime","sci-fic"]
-with t , (count(t) * 100) /  4  as percentage_match
-return t.tile as tile, percentage_match
-order by percentage_match desc
-limit 5
+
+-------- Recomendations query -----------
+MATCH (u:USER)-[:PREFERS]->(genere:GENERE)
+WITH u, collect(genere.name) AS generes
+WHERE u.id = '5e315d4a7334fa1c299c205b'
+MATCH (t:TILE)-[:BELONGS_TO]->(g:GENERE)
+WHERE g.name IN generes
+WITH t , (count(t) * 100) /  3  AS percentage_match
+RETURN t.tile AS tile, percentage_match
+ORDER BY percentage_match DESC
+LIMIT 5

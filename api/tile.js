@@ -20,15 +20,7 @@ function addTile(req, res, next) {
         }
         var id = tile['_id'];      
         let query = " ";
-        // req.body.genere.forEach(element => {
-        //     query += "MERGE (:GENERE {name:'"+ element + "' }) "
-            
-        // })
-        // console.log(query);
-        // const generePromise = session.run(query);
-        // generePromise.then(result => {
-        //     session.close();
-        // });
+       
         var generes = '[';
         req.body.genere.forEach((element, index, array) => {
             if(index === req.body.genere.length -1)
@@ -60,9 +52,6 @@ function addTile(req, res, next) {
                     
                 })
             });
-            
-            
-            
             redisClient.set(tile['tile'].toLowerCase(), JSON.stringify(tile), function(err, reply) {
                 res.json({"message":"Tile created successfuly", tile});
               });

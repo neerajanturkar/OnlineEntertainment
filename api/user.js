@@ -30,9 +30,37 @@ function addUser(req, res, next) {
         const resultPromise = session.run('CREATE (u:USER {id:$id}) RETURN u',{id: String(id)});
         resultPromise.then(result => {
             session.close();
-            driver.close();
+           
+            let query = " ";
+            req.body.preferedGeners.forEach(element => {
+                query += "MERGE (:GENERE {name:'"+ element + "' }) "             
+            })
+            var generes = '[';
+            req.body.preferedGeners.forEach((element, index, array) => {
+                if(index === req.body.preferedGeners.length -1)
+                    generes += "'" + element + "']";
+                else
+                    generes += "'" + element + "',";
+            });
+            var genereSession = driver.session()
+    
+            const generePromise = genereSession.run(query);
+            generePromise.then(result => {
+               
+                genereSession.close();
+                var relationQuery = "MATCH (u:USER), (g:GENERE) WHERE u.id = '" + String(id) + "' AND g.name IN " + generes + " CREATE (u)-[r:PREFERS]->(g) RETURN r";
+                console.log(relationQuery);
+                newSession = driver.session();
+                const genereRelationPromise = newSession.run(relationQuery);
+                genereRelationPromise.then(result => {
+                   
+                    newSession.close();
+                    driver.close();
+                    
+                })
+            });
             
-            redisClient.set(user['email'], JSON.stringify(user), function(err, reply) {
+            redisClient.set(user['email'], JSON.stringify(user), 'EX', 60 , function(err, reply) {
                 res.json({"message":"User added successfuly", user});
               });
         });
@@ -66,7 +94,7 @@ function addRelation(req, res, next) {
     var email = req.body.email;
     var tile = req.body.tile;
     var like = req.body.like; 
-    
+
     User.findOne({email: email}).exec((err, foundUser) => {  
         if(err) res.json({"success": false, "message" : err});      
         if(foundUser) {
@@ -102,14 +130,14 @@ function updateUser(req, res, next) {
 
     
     redisClient.flushdb(User['name'], JSON.stringify(user), function(err, reply){
-        res.json({"message":"User deleted successfuly from redis"});
+        console.log({"message":"User deleted successfuly from redis"});
     });
     
 
     const driver = neo4j.driver("bolt://localhost:7687", neo4j.auth.basic("neo4j", "Neo4j"));
     const session = driver.session();
-    User.findByIdAndUpdate(UserId, {$set:{
-    UserId: UserId,
+    User.findByIdAndUpdate(userId, {$set:{
+   
     name: name,
     email: email,
     dob: dob,
@@ -119,9 +147,9 @@ function updateUser(req, res, next) {
             res.json(err);
             return console.error(err);
         }
-                redisClient.set(user['name'].toLowerCase(), JSON.stringify(user), function(err, reply){
-                    res.json({"message":"User updated Successfuly", user});
-                });
+        redisClient.set(user['email'].toLowerCase(), JSON.stringify(user),'EX', 60, function(err, reply){
+            res.json({"message":"User updated Successfuly", user});
+        });
     });
 }   
 function getRecommendations(req, res, next) {
@@ -129,28 +157,24 @@ function getRecommendations(req, res, next) {
     const session = driver.session();
     User.findOne({email: req.query['email']}).exec((err, user) => {
         if(user){
-            console.log(user.preferedGeners);
-            var generes = '[';
-            user.preferedGeners.forEach((element, index, array) => {
-                if(index === user.preferedGeners.length -1)
-                    generes += "'" + element + "']";
-                else
-                    generes += "'" + element + "',";
-            });
-            query = "MATCH (t:TILE)-[:BELONGS_TO]->(g:GENERE) " +  
-                    "WHERE g.name in " + generes +
-                    " WITH t , (count(t) * 100) /  3  as percentage_match " +
-                    "RETURN t.tile as tile, percentage_match " +
+            
+            query = "MATCH (u:USER)-[:PREFERS]->(genere:GENERE) " +
+                    "WITH u, collect(genere.name) AS generes " +
+                    "WHERE u.id = $id " + 
+                    "MATCH (t:TILE)-[:BELONGS_TO]->(g:GENERE) " +
+                    "WHERE g.name IN generes " +
+                    "WITH t , (count(t) * 100) /  3  AS percentage_match " +
+                    "RETURN t.tile AS tile, percentage_match " +
                     "ORDER BY percentage_match DESC " +
                     "LIMIT 5"
             console.log(query);
-            const resultPromise = session.run(query);
+            const resultPromise = session.run(query,{id: String(user['_id'])});
             resultPromise.then(result => {
                 session.close();
                 driver.close();
                 var recommendations = [];
                 result.records.forEach(element => {
-                    // console.log(element['_fields']);
+                   
                    var r = {};
                    r['tile'] = element._fields[0];
                    r['match_percentage'] = element._fields[1]['low'];
