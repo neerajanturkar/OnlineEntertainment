@@ -7,6 +7,7 @@ const redisClient = redis.createClient();
 
 router.post('/', addTile);
 router.get('/', getTilesFromRedis, getTilesFromMongo);
+router.get('/statistics', getStatistics);
 router.put('/', updateTile)
 
 function addTile(req, res, next) {
@@ -136,6 +137,54 @@ function updateTile(req, res, next) {
             });
         })
     });
+
+}
+function getStatistics(req, res, next) {
+    like = req.query['like'];
+    var order = 'DESC';
+    var limit = 5;
+    console.log(req.query['desc']);
+    if (req.query['order'] !== undefined) {
+       
+        order = req.query['order'];
+    }
+    
+    
+    if (req.query['limit'] !== undefined){
+        limit = req.query['limit'];
+    }
+    const driver = neo4j.driver("bolt://localhost:7687", neo4j.auth.basic("neo4j", "Anturkar@05"));
+    session = driver.session();
+    if (like === undefined){
+        query = "MATCH (t:TILE)<-[:WATCHED]-(u:USER) " +
+                "WITH count(t) as total, t " +
+                "ORDER BY total  " + order + " " +
+                "RETURN t.tile as tile, total " +
+                "LIMIT " + limit;
+    } else {
+        query = "MATCH (t:TILE)<-[:WATCHED{like: '"+ like+ "' }]-(u:USER) " +
+                "WITH count(t) as total, t " +
+                "ORDER BY total " + order + " " +
+                "RETURN t.tile as tile, total " +
+                "LIMIT " + limit;
+    }
+    
+    const generePromise = session.run(query);
+    generePromise.then(result => { 
+        session.close();
+        driver.close();
+        var history = [];
+        
+        result.records.forEach(element => {
+            var r = {};
+                r['tile'] = element._fields[0];
+                r['total'] = element._fields[1]['low'];
+                history.push(r);
+            });
+            
+        res.json({"success": true, "statistics": history,"message" : "Statistics fetched"});
+    });
+
 }
     
 module.exports = router; 

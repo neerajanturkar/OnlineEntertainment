@@ -10,6 +10,7 @@ const redisClient = redis.createClient();
 
 router.get('/', getUserFromRedis, getUserFromMongo);
 router.get('/recommendations', getRecommendations);
+router.get('/history', getuserViewingHistory);
 router.post('/', addUser);
 router.post('/addRelation', addRelation);
 router.put('/',updateUser);
@@ -71,7 +72,7 @@ function getUserFromRedis(req, res, next ) {
         if(err) next();
         
         if(reply){ 
-            res.status(200).json({"success": true, "user":JSON.parse(reply), "message": "Fetcehd from redis"});
+            res.status(200).json({"success": true, "user":JSON.parse(reply), "message": "Fetched from redis"});
             return;
         } else {
             next();
@@ -81,6 +82,9 @@ function getUserFromRedis(req, res, next ) {
 function getUserFromMongo(req, res, next) {
     User.findOne({email: req.query['email']}).exec((err, user) => {
         if(user){
+            redisClient.set(user['email'], JSON.stringify(user), 'EX', 600 , function(err, reply) {
+               
+              });
             res.json({"success": true , "user":user,"message": "Fetched from mongodb"});
         } else{
             res.json({"success": false ,"message": "User not found"});
@@ -188,6 +192,60 @@ function getRecommendations(req, res, next) {
             res.json({"success": false ,"message": "User not found"});
         }
     });
+}
+function getuserViewingHistory(req, res, next) {
+    const driver = neo4j.driver("bolt://localhost:7687", neo4j.auth.basic("neo4j", "Anturkar@05"));
+    const session = driver.session();
+    email = req.query['email'];
+    redisClient.get(email, (err, reply) => {
+        if (reply){
+            user = JSON.parse(reply);
+            query = "MATCH (t:TILE)<-[r:WATCHED]-(u:USER) " +
+                    "WHERE u.id = $id " +
+                    "RETURN t.tile as tile, r.like as like";
+            const resultPromise = session.run(query,{id: String(user['_id'])});
+            resultPromise.then(result => {
+                session.close();
+                driver.close();
+                var history = [];
+                result.records.forEach(element => {
+                   
+                   var r = {};
+                   r['tile'] = element._fields[0];
+                   r['like'] = element._fields[1];
+                   history.push(r);
+                });
+                
+                res.json({"success": true, "history": history,"message" : "viewing history fetched"});
+            });
+        } else {
+            User.findOne({email: req.query['email']}).exec((err, user) => {
+                if(user){
+                    query = "MATCH (t:TILE)<-[r:WATCHED]-(u:USER) " +
+                    "WHERE u.id = $id " +
+                    "RETURN t.tile as tile, r.like as like";
+                    const resultPromise = session.run(query,{id: String(user['_id'])});
+                    resultPromise.then(result => {
+                        session.close();
+                        driver.close();
+                        var history = [];
+                        result.records.forEach(element => {
+                            var r = {};
+                                r['tile'] = element._fields[0];
+                                r['like'] = element._fields[1];
+                                history.push(r);
+                            });
+                            
+                            res.json({"success": true, "history": history,"message" : "viewing history fetched"});
+                        });
+                } else {
+                    res.json({"success": false, "message" : "Unable to fetch user viewing history"});
+                }
+            });        
+        }
+
+    });
+
 }
 module.exports = router;
 
