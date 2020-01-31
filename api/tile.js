@@ -100,44 +100,84 @@ function getTilesFromMongo(req, res, next){
 }
 
 function updateTile(req, res, next) {
-    tileId = req.body.tileId,
-    tile = req.body.tile,
-    type = req.body.type,
-    description = req.body.description,
-    publishedOn = req.body.publishedOn,
-    duration = req.body.duration,
-    genere = req.body.genere
-
-    redisClient.hdel(tile['tile'], JSON.stringify(tile), function(err, reply) {
+    const driver = neo4j.driver("bolt://localhost:7687", neo4j.auth.basic("neo4j", "Anturkar@05"));
+    const session = driver.session();
+   if (req.body.tile !== undefined) {
+    tile = req.body.tile;
     
-        redisClient.flushdb(tile['tile'], JSON.stringify(tile), function(err, reply) {
-            
-            console.log("Tile deleted successfuly from redis")
-        });
-        
+    redisClient.get(tile.toLowerCase(), (err, reply) => {
+        if(reply){
+            redisClient.del(tile.toLowerCase(), (err, result) => {
+                Tile.findByIdAndUpdate(JSON.parse(reply)['_id'], {$set: req.body}, {new: true}, function(err, uTile) {
+                    if(err) res.json({success:false, message: err});
+                     redisClient.set(uTile['tile'].toLowerCase(), JSON.stringify(uTile) , (err, reply) => {
+                        if (err) res.json({success:true, updated_tile: uTile, message: "Tile Updated Successfully. Cached data may not be updated."})
+                        var query = "MATCH (t:TILE)-[r:BELONGS_TO]->(g:GENERE)  WHERE t.id = '" + String(uTile['id']) + "' DELETE r";
+                        console.log(query);
+                        const updatedPromise = session.run(query, {id : String(uTile['id'])});
+                        updatedPromise.then( result => {
+                            
+                            session.close();
+                            var generes = '[';
+                            uTile['genere'].forEach((element, index, array) => {
+                                if(index === uTile['genere'].length -1)
+                                    generes += "'" + element + "']";
+                                else
+                                    generes += "'" + element + "',";
+                            });
+                            
+                            var relationQuery = "MATCH (t:TILE), (g:GENERE) WHERE t.id = '" + String(uTile['id']) + "' AND g.name IN " + generes + " CREATE (t)-[r:BELONGS_TO]->(g) RETURN r";
+                            newSession = driver.session();
+                            const genereRelationPromise = newSession.run(relationQuery);
+                            genereRelationPromise.then(result => {
+                                ;
+                                newSession.close();
+                                driver.close();
+                                res.json({success:true, updated_tile: uTile, message: "Tile Updated Successfully"});        
+                            })
+                        });
 
-        const driver = neo4j.driver("bolt://localhost:7687", neo4j.auth.basic("neo4j", "Anturkar@05"));
-        const session = driver.session();
-        Tile.findByIdAndUpdate(tileId, {$set:{
-        tileId: tileId,
-        tile: tile, 
-        type: type,
-        description: description,
-        publishedOn : publishedOn,
-        duration : duration,
-        genere : genere,
-        }}, function(err, Tile){
-            if (err) {
-                res.json(err); 
-                return console.error(err);
-            }
-               
-            redisClient.set(Tile['tile'].toLowerCase(), JSON.stringify(Tile), function(err, reply) {
-                res.json({"message":"Tile updated successfuly", Tile});
+                        
+                    }); 
+                });
             });
-        })
+            
+        } else {
+            Tile.findOne({tile: tile}).exec((err, tileUpdate) => {
+                if (tileUpdate) {
+                    Tile.findByIdAndUpdate(tileUpdate['_id'], {$set: req.body}, {new: true}, function(err, uTile) {
+                        if(err) res.json({success:false, message: err});
+                        redisClient.set(uTile['tile'].toLowerCase(), JSON.stringify(uTile), () => {
+                            if (err) res.json({success:true, updated_tile: uTile, message: "Tile Updated Successfully. Cached data may not be updated."})
+                            var query = "MATCH (t:TILE)-[r:BELONGS_TO]->(g:GENERE)  WHERE t.id = '" + String(uTile['id']) + "' DELETE r";
+                            
+                            const updatedPromise = session.run(query, {id : String(uTile['id'])});
+                            updatedPromise.then( result => {
+                                
+                                session.close();
+                                var generes = '[';
+                                uTile['genere'].forEach((element, index, array) => {
+                                    if(index === uTile['genere'].length -1)
+                                        generes += "'" + element + "']";
+                                    else
+                                        generes += "'" + element + "',";
+                                });
+                                var relationQuery = "MATCH (t:TILE), (g:GENERE) WHERE t.id = '" + String(uTile['id']) + "' AND g.name IN " + generes + " CREATE (t)-[r:BELONGS_TO ]->(g) RETURN r";
+                                newSession = driver.session();
+                                const genereRelationPromise = newSession.run(relationQuery);
+                                genereRelationPromise.then(result => {
+                                    newSession.close();
+                                    driver.close();
+                                    res.json({success:true, updated_tile: uTile, message: "Tile Updated Successfully"});        
+                                })
+                            });
+                        });
+                    });
+                }
+            });
+        }
     });
-
+   }
 }
 function getStatistics(req, res, next) {
     like = req.query['like'];
