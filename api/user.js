@@ -82,7 +82,7 @@ function getUserFromRedis(req, res, next ) {
 function getUserFromMongo(req, res, next) {
     User.findOne({email: req.query['email']}).exec((err, user) => {
         if(user){
-            redisClient.set(user['email'], JSON.stringify(user), 'EX', 600 , function(err, reply) {
+            redisClient.set(user['email'], JSON.stringify(user), 'EX', 60 , function(err, reply) {
                
               });
             res.json({"success": true , "user":user,"message": "Fetched from mongodb"});
