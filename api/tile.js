@@ -53,7 +53,7 @@ function addTile(req, res, next) {
                     
                 })
             });
-            redisClient.set(tile['tile'].toLowerCase(), JSON.stringify(tile), EX , 60,function(err, reply) {
+            redisClient.set(tile['tile'].toLowerCase(), JSON.stringify(tile), 'EX' , 60,function(err, reply) {
                 res.json({"message":"Tile created successfuly", tile});
               });
         });
@@ -110,7 +110,7 @@ function updateTile(req, res, next) {
             redisClient.del(tile.toLowerCase(), (err, result) => {
                 Tile.findByIdAndUpdate(JSON.parse(reply)['_id'], {$set: req.body}, {new: true}, function(err, uTile) {
                     if(err) res.json({success:false, message: err});
-                     redisClient.set(uTile['tile'].toLowerCase(), JSON.stringify(uTile) , EX , 60, (err, reply) => {
+                     redisClient.set(uTile['tile'].toLowerCase(), JSON.stringify(uTile) , 'EX' , 60, (err, reply) => {
                         if (err) res.json({success:true, updated_tile: uTile, message: "Tile Updated Successfully. Cached data may not be updated."})
                         var query = "MATCH (t:TILE)-[r:BELONGS_TO]->(g:GENERE)  WHERE t.id = '" + String(uTile['id']) + "' DELETE r";
                         console.log(query);
@@ -147,7 +147,7 @@ function updateTile(req, res, next) {
                 if (tileUpdate) {
                     Tile.findByIdAndUpdate(tileUpdate['_id'], {$set: req.body}, {new: true}, function(err, uTile) {
                         if(err) res.json({success:false, message: err});
-                        redisClient.set(uTile['tile'].toLowerCase(), JSON.stringify(uTile), EX , 60 ,() => {
+                        redisClient.set(uTile['tile'].toLowerCase(), JSON.stringify(uTile), 'EX' , 60 ,() => {
                             if (err) res.json({success:true, updated_tile: uTile, message: "Tile Updated Successfully. Cached data may not be updated."})
                             var query = "MATCH (t:TILE)-[r:BELONGS_TO]->(g:GENERE)  WHERE t.id = '" + String(uTile['id']) + "' DELETE r";
                             
@@ -177,6 +177,8 @@ function updateTile(req, res, next) {
             });
         }
     });
+   } else {
+       res.json({success:false, message:"Tile name cannot be undefined"});
    }
 }
 function getStatistics(req, res, next) {

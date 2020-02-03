@@ -126,39 +126,92 @@ function addRelation(req, res, next) {
     
 }
 function updateUser(req, res, next) {
-    userId = req.body.userId,
-    name = req.body.name,
-    email = req.body.email,
-    dob = req.body.dob,
-    preferedGeners = req.body.preferedGeners
-
-    
-    redisClient.flushdb(User['name'], JSON.stringify(user), function(err, reply){
-        console.log({"message":"User deleted successfuly from redis"});
-    });
-    
-
-    const driver = neo4j.driver("bolt://localhost:7687", neo4j.auth.basic("neo4j", "Neo4j"));
+    const driver = neo4j.driver("bolt://localhost:7687", neo4j.auth.basic("neo4j", "Anturkar@05"));
     const session = driver.session();
-    User.findByIdAndUpdate(userId, {$set:{
-   
-    name: name,
-    email: email,
-    dob: dob,
-    preferedGeners: preferedGeners,
-    }}, function(err, user){
-        if (err) {
-            res.json(err);
-            return console.error(err);
-        }
-        redisClient.set(user['email'].toLowerCase(), JSON.stringify(user),'EX', 60, function(err, reply){
-            res.json({"message":"User updated Successfuly", user});
-        });
-    });
+    if (req.body.email !== undefined) {
+        let email = req.body.email;
+        redisClient.get(email, function (err, reply) {
+            if (reply) {
+                redisClient.del(email , (err, result) => {
+                     User.findByIdAndUpdate(JSON.parse(reply)['_id'], {$set: req.body}, {new:true}, (err, uUser) => {
+                         if(err) res.json({success:false, message: err});
+                         redisClient.set(email, JSON.stringify(uUser), 'EX' , 60 , (err, reply) => {
+                             if (err) res.json({success:true, updated_tile: uUser, message: "User Updated Successfully. Cached data may not be updated."})
+                             var query = "MATCH (u:USER)-[r:PREFERS]->(g:GENERE)  WHERE u.id = '" + String(uUser['id']) + "' DELETE r";
+                             const updatedPromise = session.run(query, {id : String(uUser['id'])});
+                             updatedPromise.then( result => {
+
+                                 session.close();
+                                 var generes = '[';
+                                 uUser['preferedGeners'].forEach((element, index, array) => {
+                                     if(index === uUser['preferedGeners'].length -1)
+                                         generes += "'" + element + "']";
+                                     else
+                                         generes += "'" + element + "',";
+                                 });
+
+                                 var relationQuery = "MATCH (u:USER), (g:GENERE) WHERE u.id = '" + String(uUser['id']) + "' AND g.name IN " + generes + " CREATE (u)-[r:PREFERS]->(g) RETURN r";
+                                 newSession = driver.session();
+                                 const genereRelationPromise = newSession.run(relationQuery);
+                                 genereRelationPromise.then(result => {
+
+                                     newSession.close();
+                                     driver.close();
+                                     res.json({success:true, updated_user: uUser, message: "User Updated Successfully"});
+                                 })
+                             });
+
+                         });
+                     });
+                });
+            } else {
+                User.findOne({email: email}).exec((err, result) => {
+                    if (result) {
+                        User.findByIdAndUpdate(result['_id'], {$set: req.body}, {new: true}, function(err, uUser) {
+                            if(err) res.json({success:false, message: err});
+                            console.log(uUser);
+                            redisClient.set(uUser['email'], JSON.stringify(uUser), 'EX' , 60 ,() => {
+                                if (err) res.json({success:true, updated_user: uUser, message: "User Updated Successfully. Cached data may not be updated."})
+                                var query = "MATCH (u:USER)-[r:PREFERS]->(g:GENERE)  WHERE u.id = '" + String(uUser['id']) + "' DELETE r";
+                                const updatedPromise = session.run(query, {id : String(uUser['id'])});
+                                updatedPromise.then( result => {
+
+                                    session.close();
+                                    var generes = '[';
+                                    uUser['preferedGeners'].forEach((element, index, array) => {
+                                        if(index === uUser['preferedGeners'].length -1)
+                                            generes += "'" + element + "']";
+                                        else
+                                            generes += "'" + element + "',";
+                                    });
+
+                                    var relationQuery = "MATCH (u:USER), (g:GENERE) WHERE u.id = '" + String(uUser['id']) + "' AND g.name IN " + generes + " CREATE (u)-[r:PREFERS]->(g) RETURN r";
+                                    newSession = driver.session();
+                                    const genereRelationPromise = newSession.run(relationQuery);
+                                    genereRelationPromise.then(result => {
+
+                                        newSession.close();
+                                        driver.close();
+                                        res.json({success:true, updated_user: uUser, message: "User Updated Successfully"});
+                                    })
+                                });
+                            });
+                        });
+                    }
+                });
+
+            }
+        })
+    
+    } else {
+        req.json({success:false, message: "User email cannot be null"});
+    }
+       
 }   
 function getRecommendations(req, res, next) {
     const driver = neo4j.driver("bolt://localhost:7687", neo4j.auth.basic("neo4j", "Anturkar@05"));
     const session = driver.session();
+    
     User.findOne({email: req.query['email']}).exec((err, user) => {
         if(user){
             
@@ -166,7 +219,7 @@ function getRecommendations(req, res, next) {
                     "WITH u, collect(genere.name) AS generes " +
                     "WHERE u.id = $id " + 
                     "MATCH (t:TILE)-[:BELONGS_TO]->(g:GENERE) " +
-                    "WHERE g.name IN generes " +
+                    "WHERE g.name IN generes AND NOT (t)<-[:WATCHED]-(u)" +
                     "WITH t , (count(t) * 100) /  3  AS percentage_match " +
                     "RETURN t.tile AS tile, percentage_match " +
                     "ORDER BY percentage_match DESC " +
